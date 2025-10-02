@@ -11,7 +11,7 @@ import java.util.List;
 @Controller
 public class HelloController {
 
-	@GetMapping(value = "/")
+	@GetMapping(value = "/test")
 	public String printWelcome(ModelMap model) {
 		List<String> messages = new ArrayList<>();
 		messages.add("Hello!");
