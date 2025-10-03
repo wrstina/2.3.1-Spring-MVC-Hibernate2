@@ -10,14 +10,14 @@ import javax.persistence.*;
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
 
-        private String Name;
+        private String name;
         private String email;
         private Integer age;
 
         public User() {} //hiber
 
-        public User(String Name, String email, Integer age) {
-            this.Name = Name;
+        public User(String name, String email, Integer age) {
+            this.name = name;
             this.email = email;
             this.age = age;
         }
@@ -25,8 +25,8 @@ import javax.persistence.*;
         public Long getId() { return id; }
         public void setId(Long id) { this.id = id; }
 
-        public String getName() { return Name; }
-        public void setName(String Name) { this.Name = Name; }
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
 
         public String getEmail() { return email; }
         public void setEmail(String email) { this.email = email; }
