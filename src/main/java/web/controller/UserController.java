@@ -18,7 +18,7 @@ public class UserController {
     private final UserService userService;
 
     public UserController(UserService userService) {
-       this.userService = userService;
+        this.userService = userService;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
@@ -35,13 +35,17 @@ public class UserController {
         if (!model.containsAttribute(USER_ATTRIBUTE)) {
             model.addAttribute(USER_ATTRIBUTE, new User());
         }
+        if (!model.containsAttribute(IS_EDIT_ATTRIBUTE)) {
+            model.addAttribute(IS_EDIT_ATTRIBUTE, false);
+        }
         return USERS_VIEW;
     }
 
     @GetMapping("/add-user")
-    public String showAddUserForm (Model model) {
+    public String showAddUserForm(Model model) {
         model.addAttribute(USER_ATTRIBUTE, new User());
         model.addAttribute(IS_EDIT_ATTRIBUTE, false);
+        model.addAttribute(USERS_ATTRIBUTE, userService.getAllUsers());
         logger.info("New user created");
         return USERS_VIEW;
     }
@@ -50,13 +54,14 @@ public class UserController {
     public String saveUser(@Valid User user,
                            BindingResult bindingResult,
                            Model model) {
+        userService.saveUser(user);
+        logger.info("User saved: {}", user.getName());
         if (bindingResult.hasErrors()) {
+            logger.warn("Validation errors found while saving user: {}", bindingResult.getAllErrors());
             model.addAttribute(USERS_ATTRIBUTE, userService.getAllUsers());
             model.addAttribute(IS_EDIT_ATTRIBUTE, false);
             return USERS_VIEW;
         }
-        userService.saveUser(user);
-        logger.info("User saved: {}", user.getName());
         return REDIRECT_TO_USERS;
     }
 
@@ -74,23 +79,37 @@ public class UserController {
     public String updateUser(@Valid User user,
                              BindingResult bindingResult,
                              Model model) {
+        logger.info("Attempting to update user: {} (ID: {})", user.getName(), user.getId());
         if (bindingResult.hasErrors()) {
             model.addAttribute(USERS_ATTRIBUTE, userService.getAllUsers());
             model.addAttribute(IS_EDIT_ATTRIBUTE, true);
             return USERS_VIEW;
         }
-
-        userService.updateUser(user);
-        logger.info("User updated: {}", user.getName());
+        try {
+            userService.updateUser(user);
+            logger.info("User updated successfully: {} (ID: {})", user.getName(), user.getId());
+        } catch (Exception e) {
+            logger.error("Error updating user: {}", e.getMessage());
+            bindingResult.reject("error.user", "User wasn't updated: " + e.getMessage());
+            model.addAttribute(USERS_ATTRIBUTE, userService.getAllUsers());
+            model.addAttribute(IS_EDIT_ATTRIBUTE, true);
+            return USERS_VIEW;
+        }
         return REDIRECT_TO_USERS;
     }
 
     @PostMapping("/delete-user")
     public String deleteUser(@RequestParam long id) {
         userService.deleteUserById(id);
-        logger.info("User deleted with id: {}", id);
+        try {
+            logger.info("User deleted with id: {}", id);
+        } catch (Exception e) {
+            logger.error("Error deleting user with id {}: {}", id, e.getMessage());
+
+        }
         return REDIRECT_TO_USERS;
     }
+}
 
     /*@GetMapping("/")
     public String home() {
@@ -117,4 +136,4 @@ public class UserController {
             System.out.println("User created successfully");
         }
     }*/
-}
+

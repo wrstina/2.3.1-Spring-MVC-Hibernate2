@@ -197,6 +197,15 @@
             margin-top: 25px;
         }
 
+        .input-error {
+            border-color: #e74c3c !important;
+            background-color: #fdf2f2;
+        }
+
+        .input-valid {
+            border-color: #27ae60 !important;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -221,22 +230,53 @@
 <div class="container">
     <h1>User Management System</h1>
 
-    <!-- Форма для добавления/редактирования пользователя -->
-    <div class="form-section">
-        <h2 th:text="${isEdit} ? 'Edit User' : 'Add New User'">Add New User</h2>
-
-        <form th:object="${user}" method="post" novalidate>
-            <!-- Скрытое поле для ID при редактировании -->
-            <input th:if="${isEdit}" type="hidden" th:field="*{id}">
-
+    <!-- Форма для добавления пользователя -->
+    <div class="form-section" th:unless="${isEdit}">
+        <h2>Add New User</h2>
+        <form th:object="${user}" th:action="@{/users/save-user}" method="post" novalidate>
             <div class="form-group">
                 <label for="name">Full Name:</label>
+                <input type="text" id="name" th:field="*{name}" placeholder="Enter full name (letters and spaces only)"
+                       pattern="[A-Za-zА-Яа-яЁё\s\-']+" title="Name can only contain letters, spaces, hyphens and apostrophes" required>
+                <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="error"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address:</label>
+                <input type="email" id="email" th:field="*{email}" placeholder="Enter valid email address" required>
+                <span th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="error"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="age">Age:</label>
+                <input type="number" id="age" th:field="*{age}" placeholder="Enter age (must be positive number)"
+                       min="1" max="150" title="Age must be between 1 and 150" required>
+                <span th:if="${#fields.hasErrors('age')}" th:errors="*{age}" class="error"></span>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Add User</button>
+                <a th:href="@{/users}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Форма для редактирования пользователя -->
+    <div class="form-section" th:if="${isEdit}">
+        <h2>Edit User</h2>
+        <form th:object="${user}" th:action="@{/users/update-user}" method="post" novalidate>
+            <!-- Убрано дублирование скрытого поля -->
+            <input type="hidden" th:field="*{id}">
+
+            <div class="form-group">
+                <label for="edit-name">Full Name:</label>
                 <input type="text"
-                       id="name"
+                       id="edit-name"
                        th:field="*{name}"
                        placeholder="Enter full name (letters and spaces only)"
-                       pattern="[A-Za-zА-Яа-яЁё\s]+"
-                       title="Name can only contain letters and spaces"
+                       th:classappend="${#fields.hasErrors('name')} ? 'input-error' : ''"
+                       pattern="[A-Za-zА-Яа-яЁё\s\-']+"
+                       title="Name can only contain letters, spaces, hyphens and apostrophes"
                        required>
                 <span th:if="${#fields.hasErrors('name')}"
                       th:errors="*{name}"
@@ -244,11 +284,12 @@
             </div>
 
             <div class="form-group">
-                <label for="email">Email Address:</label>
+                <label for="edit-email">Email Address:</label>
                 <input type="email"
-                       id="email"
+                       id="edit-email"
                        th:field="*{email}"
                        placeholder="Enter valid email address"
+                       th:classappend="${#fields.hasErrors('email')} ? 'input-error' : ''"
                        required>
                 <span th:if="${#fields.hasErrors('email')}"
                       th:errors="*{email}"
@@ -256,14 +297,15 @@
             </div>
 
             <div class="form-group">
-                <label for="age">Age:</label>
+                <label for="edit-age">Age:</label>
                 <input type="number"
-                       id="age"
+                       id="edit-age"
                        th:field="*{age}"
                        placeholder="Enter age (must be positive number)"
+                       th:classappend="${#fields.hasErrors('age')} ? 'input-error' : ''"
                        min="1"
-                       max="120"
-                       title="Age must be between 1 and 120"
+                       max="150"
+                       title="Age must be between 1 and 150"
                        required>
                 <span th:if="${#fields.hasErrors('age')}"
                       th:errors="*{age}"
@@ -271,21 +313,8 @@
             </div>
 
             <div class="form-actions">
-                <button type="submit"
-                        class="btn btn-primary"
-                        th:if="${isEdit}"
-                        formaction="@{/users/update-user}">
-                    Update User
-                </button>
-                <button type="submit"
-                        class="btn btn-primary"
-                        th:unless="${isEdit}"
-                        formaction="@{/users/save-user}">
-                    Add User
-                </button>
-                <a th:href="@{/users}" class="btn btn-secondary">
-                    Cancel
-                </a>
+                <button type="submit" class="btn btn-primary">Update User</button>
+                <a th:href="@{/users}" class="btn btn-secondary">Cancel</a>
             </div>
         </form>
     </div>
@@ -317,11 +346,12 @@
                            title="Edit user">
                             Edit
                         </a>
-                        <form method="post" style="display:inline;">
+                        <form method="post"
+                              th:action="@{/users/delete-user}"
+                              style="display:inline;">
                             <input type="hidden" name="id" th:value="${user.id}">
                             <button type="submit"
                                     class="btn btn-danger"
-                                    formaction="@{/users/delete-user}"
                                     onclick="return confirm('Are you sure you want to delete this user?')"
                                     title="Delete user">
                                 Delete
@@ -347,25 +377,26 @@
 <script>
     // Client-side validation enhancement
     document.addEventListener('DOMContentLoaded', function() {
-        const forms = document.querySelectorAll('form');
+        // Функция для инициализации валидации формы
+        function initializeFormValidation(form) {
+            const nameInput = form.querySelector('input[type="text"]');
+            const ageInput = form.querySelector('input[type="number"]');
+            const emailInput = form.querySelector('input[type="email"]');
 
-        forms.forEach(form => {
             form.addEventListener('submit', function(e) {
-                const nameInput = form.querySelector('#name');
-                const ageInput = form.querySelector('#age');
                 let isValid = true;
 
                 // Name validation
-                if (nameInput && !/^[A-Za-zА-Яа-яЁё\s]+$/.test(nameInput.value.trim())) {
-                    showError(nameInput, 'Name can only contain letters and spaces');
+                if (nameInput && !/^[A-Za-zА-Яа-яЁё\s\-']+$/.test(nameInput.value.trim())) {
+                    showError(nameInput, 'Name can only contain letters, spaces, hyphens and apostrophes');
                     isValid = false;
                 }
 
                 // Age validation
                 if (ageInput) {
                     const age = parseInt(ageInput.value);
-                    if (isNaN(age) || age < 1 || age > 120) {
-                        showError(ageInput, 'Age must be between 1 and 120');
+                    if (isNaN(age) || age < 1 || age > 150) {
+                        showError(ageInput, 'Age must be between 1 and 150');
                         isValid = false;
                     }
                 }
@@ -374,7 +405,45 @@
                     e.preventDefault();
                 }
             });
-        });
+
+            // Real-time validation для каждой формы
+            if (nameInput) {
+                nameInput.addEventListener('input', function() {
+                    if (/^[A-Za-zА-Яа-яЁё\s\-']+$/.test(this.value)) {
+                        showValid(this);
+                    } else {
+                        this.classList.add('input-error');
+                        this.classList.remove('input-valid');
+                    }
+                });
+            }
+
+            if (ageInput) {
+                ageInput.addEventListener('input', function() {
+                    const age = parseInt(this.value);
+                    if (!isNaN(age) && age >= 1 && age <= 150) {
+                        showValid(this);
+                    } else {
+                        this.classList.add('input-error');
+                        this.classList.remove('input-valid');
+                    }
+                });
+            }
+
+            if (emailInput) {
+                emailInput.addEventListener('input', function() {
+                    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value)) {
+                        showValid(this);
+                    } else {
+                        this.classList.add('input-error');
+                        this.classList.remove('input-valid');
+                    }
+                });
+            }
+
+            // Инициализация стилей для полей
+            initializeFieldStyles(form);
+        }
 
         function showError(input, message) {
             // Remove existing error
@@ -391,35 +460,52 @@
             input.parentNode.appendChild(error);
 
             // Highlight input
-            input.style.borderColor = '#e74c3c';
+            input.classList.add('input-error');
+            input.classList.remove('input-valid');
 
             // Focus on the input
             input.focus();
         }
 
-        // Real-time validation
-        const nameInput = document.getElementById('name');
-        if (nameInput) {
-            nameInput.addEventListener('input', function() {
-                if (/^[A-Za-zА-Яа-яЁё\s]+$/.test(this.value)) {
-                    this.style.borderColor = '#27ae60';
-                } else {
-                    this.style.borderColor = '#e74c3c';
-                }
-            });
+        function showValid(input) {
+            input.classList.remove('input-error');
+            input.classList.add('input-valid');
+
+            // Remove client error if exists
+            let existingError = input.parentNode.querySelector('.client-error');
+            if (existingError) {
+                existingError.remove();
+            }
         }
 
-        const ageInput = document.getElementById('age');
-        if (ageInput) {
-            ageInput.addEventListener('input', function() {
-                const age = parseInt(this.value);
-                if (!isNaN(age) && age >= 1 && age <= 120) {
-                    this.style.borderColor = '#27ae60';
-                } else {
-                    this.style.borderColor = '#e74c3c';
+        function initializeFieldStyles(form) {
+            const nameField = form.querySelector('input[type="text"]');
+            const ageField = form.querySelector('input[type="number"]');
+            const emailField = form.querySelector('input[type="email"]');
+
+            if (nameField && nameField.value && /^[A-Za-zА-Яа-яЁё\s\-']+$/.test(nameField.value)) {
+                nameField.classList.add('input-valid');
+            }
+
+            if (ageField && ageField.value) {
+                const age = parseInt(ageField.value);
+                if (!isNaN(age) && age >= 18 && age <= 120) {
+                    ageField.classList.add('input-valid');
                 }
-            });
+            }
+
+            if (emailField && emailField.value) {
+                if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailField.value)) {
+                    emailField.classList.add('input-valid');
+                }
+            }
         }
+
+        // Инициализация всех форм на странице
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            initializeFormValidation(form);
+        });
     });
 </script>
 </body>
